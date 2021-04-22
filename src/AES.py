@@ -4,6 +4,12 @@ import numpy as np
 
 
 def sub_bytes(state, is_inv=False):
+    '''
+    Sbox变换函数
+    :param state: SBOX变换字节
+    :param is_inv: 用于加密(False)或解密(True)
+    :return: SBOX 变换后矩阵
+    '''
     result = np.zeros((4, 4))
     if is_inv:
         for i in range(4):
@@ -17,6 +23,12 @@ def sub_bytes(state, is_inv=False):
 
 
 def shift(line, times, is_right=True):
+    '''
+    :param line: 变换的行
+    :param times: 移动几位
+    :param is_right:是否右移
+    :return: 行变换后的行
+    '''
     lens = len(line)
     if is_right:
         return [line[(0 - times) % lens], line[(1 - times) % lens], line[(2 - times) % lens],
@@ -27,6 +39,11 @@ def shift(line, times, is_right=True):
 
 
 def to_matrix(text):
+    '''
+    将字符串转为AES所用矩阵
+    :param text:写入的字符串
+    :return:字节矩阵
+    '''
     result = [[], [], [], []]
     for i in range(len(text) // 2):
         result[i % 4].append(int(text[2 * i:i * 2 + 2], 16))
@@ -34,6 +51,11 @@ def to_matrix(text):
 
 
 def to_text(matrix):
+    '''
+    将求得的结果矩阵转为文本
+    :param matrix: 结果的矩阵
+    :return:结果文本
+    '''
     result = ''
     for i in range(4):
         for j in range(4):
@@ -42,6 +64,11 @@ def to_text(matrix):
 
 
 def re_matrix(texts):
+    '''
+    用于轮密钥加时从4列转回矩阵
+    :param texts:需要转回矩阵的列表
+    :return:重组后的矩阵
+    '''
     result = np.zeros((4, 4))
     for i in range(4):
         str_key = '{:08X}'.format(int(texts[i]))
@@ -51,12 +78,24 @@ def re_matrix(texts):
 
 
 def shift_row(matrix, is_inv=False):
+    '''
+    行移位函数
+    :param matrix:需要行变换的矩阵
+    :param is_inv:是否为解密
+    :return:行变换后的矩阵
+    '''
     for i in range(1, 4):
         matrix[i] = shift(matrix[i], 4 - i, not is_inv)
     return matrix
 
 
 def mix_column(matrix, is_inv=False):
+    '''
+    列混淆函数
+    :param matrix:需要列混淆的矩阵
+    :param is_inv:是否为解密
+    :return:列混淆后的函数
+    '''
     if is_inv:
         trans = np.array(
             [[0x0e, 0x0b, 0x0d, 0x09], [0x09, 0x0e, 0x0b, 0x0d], [0x0d, 0x09, 0x0e, 0x0b], [0x0b, 0x0d, 0x09, 0x0e]])
@@ -67,6 +106,12 @@ def mix_column(matrix, is_inv=False):
 
 
 def xor(a, b):
+    '''
+    仅用于轮密钥加的字符串异或函数
+    :param a:第一个字符串
+    :param b:第二个字符串
+    :return:轮密钥加后的矩阵
+    '''
     c = []
     d = []
     for i in range(4):
@@ -81,6 +126,11 @@ def xor(a, b):
 
 
 def generate_key(key):
+    '''
+    轮密钥生成函数
+    :param key: 密钥文本
+    :return:轮密钥序列
+    '''
     result = np.zeros((11, 4))
     for i in range(4):
         result[0][i] = int(key[8 * i:8 * i + 8], 16)
@@ -106,6 +156,12 @@ def generate_key(key):
 
 
 def encode(plain, key):
+    '''
+    AES 加密函数
+    :param plain: 明文字符串，应为128位
+    :param key: 密钥字符串，应为128位
+    :return: AES-128加密后结果
+    '''
     plain_mat = to_matrix(plain)
     round_keys = generate_key(key)
     state = xor(plain_mat, round_keys[0])
@@ -122,6 +178,12 @@ def encode(plain, key):
 
 
 def decode(cipher, key):
+    '''
+    AES-128解密函数
+    :param cipher:密文字符串，应为128位
+    :param key:密钥字符串，应为128位
+    :return:AES-128解密后结果
+    '''
     cipher_mat = to_matrix(cipher)
     round_keys = generate_key(key)
     state = xor(cipher_mat, round_keys[-1])
